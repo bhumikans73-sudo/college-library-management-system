@@ -7,7 +7,11 @@ The following recommendations are based on the supplied records and the results 
 1. Which books should the library buy more copies of?
 The library should give priority to books that have no available copies and still have pending issues. From C12, these are:
 •Python Crash Course (book_id 2) – 4 borrowing records; 0 copies available and a pending issue.
+
+
 •Database System Concepts (book_id 4) – 5 borrowing records; 0 copies available and pending issues.
+
+
 •Data Communications (book_id 8) – 2 borrowing records; 0 copies available and pending issues.
 
 Database System Concepts is especially important because it is among the most borrowed titles in C4 and has no copies available. The library should also monitor Computer Networks (book_id 7), which has only 1 available copy and an unreturned issue.
@@ -15,6 +19,10 @@ Database System Concepts is especially important because it is among the most bo
 
 2. Which members should get a reminder?
 C6 shows 11 issues that have not yet been returned. As of 11 November 2026, the following three are overdue and should receive an immediate overdue reminder:
+
+
+
+
 Member
 Book
 Due date
@@ -80,3 +88,44 @@ Higher Engineering Mathematics
 
 Conclusion
 The library should purchase more copies of high-demand books that have zero stock and pending issues, especially Database System Concepts, Python Crash Course and Data Communications. It should immediately remind the three overdue members, send advance reminders for upcoming due dates, and use automated notifications and consistent fines to reduce late returns.
+
+
+
+-- Remove the old trigger and test tables, if they exist
+DROP TRIGGER IF EXISTS decrease_book_copies;
+DROP TABLE IF EXISTS issues_copy;
+DROP TABLE IF EXISTS books_copy;
+
+-- Create copies of the original tables
+CREATE TABLE books_copy LIKE books;
+INSERT INTO books_copy SELECT * FROM books;
+
+CREATE TABLE issues_copy LIKE issues;
+INSERT INTO issues_copy SELECT * FROM issues;
+
+-- Create the trigger
+DELIMITER $$
+
+CREATE TRIGGER decrease_book_copies
+AFTER INSERT ON issues_copy
+FOR EACH ROW
+BEGIN
+    UPDATE books_copy
+    SET copies_available = copies_available - 1
+    WHERE book_id = NEW.book_id;
+END $$
+
+DELIMITER ;
+
+-- Test the trigger
+-- Book ID 9 (Wings of Fire) has 5 available copies initially
+INSERT INTO issues_copy
+    (issue_id, member_id, book_id, issue_date, due_date, return_date)
+VALUES
+    (33, 9, 9, '2026-11-11', '2026-11-25', NULL);
+
+-- Verify the result
+SELECT book_id, title, copies_available
+FROM books_copy
+WHERE book_id = 9;
+
